@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Code Scanner</title>
+  <title>QR Scanner to Deep Link</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,15 +27,14 @@
       width: 100%;
       max-width: 400px;
       margin-top: 20px;
-      border: 2px solid #ccc;
       border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <h1>QR Code Scanner</h1>
-  <button id="scanBtn">Scan QR Code</button>
-  <video id="video" autoplay></video>
+  <h1>QR Scanner</h1>
+  <button id="scanBtn">Click to Scan QR</button>
+  <video id="video" autoplay playsinline></video>
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
@@ -61,9 +60,9 @@
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(imageData.data, imageData.width, imageData.height);
             if (code) {
-              alert(`QR Code Detected:\n${code.data}`);
-              stream.getTracks().forEach(track => track.stop());
+              stream.getTracks().forEach(track => track.stop()); // stop camera
               video.style.display = 'none';
+              window.location.href = code.data; // Go directly to deep link
               return;
             }
           }
