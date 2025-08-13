@@ -1,53 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Scanner</title>
-    <style>
-        #video {
-            width: 100%;
-            max-width: 600px;
-            border: 1px solid black;
-        }
-        #scanButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Scanner</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      font-size: 18px;
+      padding: 12px 20px;
+      background: #0078d7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    video {
+      display: none;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
-    <button id="scanButton">Scan QR Code 2</button>
-    <div id="qr-reader" style="display: none;"></div>
-    <script>
-        const scanButton = document.getElementById('scanButton');
-        const qrReader = new Html5Qrcode("qr-reader");
+  <h1>QR Code Scanner</h1>
+  <button id="scanBtn">Scan QR Code</button>
+  <video id="video" autoplay></video>
 
-        scanButton.addEventListener('click', () => {
-            scanButton.style.display = 'none'; // Hide the button
-            qrReader.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: 250
-                },
-                (decodedText, decodedResult) => {
-                    alert(`QR Code URL: ${decodedText}`);
-                    qrReader.stop().then(ignore => {
-                        scanButton.style.display = 'block'; // Show the button again
-                    }).catch(err => {
-                        console.error('Error stopping the QR code scanner:', err);
-                    });
-                },
-                (errorMessage) => {
-                    // Handle scanning errors
-                }
-            ).catch(err => {
-                console.error('Error starting the QR code scanner:', err);
-            });
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script>
+    const scanBtn = document.getElementById('scanBtn');
+    const video = document.getElementById('video');
+
+    scanBtn.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
         });
-    </script>
+        video.style.display = 'block';
+        video.srcObject = stream;
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const tick = () => {
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+              alert(`QR Code Detected:\n${code.data}`);
+              stream.getTracks().forEach(track => track.stop());
+              video.style.display = 'none';
+              return;
+            }
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      } catch (err) {
+        alert("Camera access denied or not available.");
+        console.error(err);
+      }
+    });
+  </script>
 </body>
 </html>
