@@ -5,44 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
     <style>
-        #video {
-            width: 100%;
-            max-width: 600px;
-            border: 1px solid black;
+        #scanButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <video id="video" autoplay></video>
+    <input type="file" id="fileInput" accept="image/*" style="display: none;" capture="environment">
+    <button id="scanButton">Scan QR Code</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+        const scanButton = document.getElementById('scanButton');
+        const fileInput = document.getElementById('fileInput');
 
-        async function startScanning() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = stream;
+        scanButton.addEventListener('click', () => {
+            fileInput.click();
+        });
 
-            video.addEventListener('loadeddata', () => {
-                scanQRCode();
-            });
-        }
-
-        async function scanQRCode() {
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-            if (code) {
-                alert(`QR Code URL: ${code.data}`);
-                video.srcObject.getTracks().forEach(track => track.stop());
-            } else {
-                requestAnimationFrame(scanQRCode);
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const context = canvas.getContext('2d');
+                        context.drawImage(img, 0, 0);
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, canvas.width, canvas.height);
+                        if (code) {
+                            alert(`QR Code URL: ${code.data}`);
+                        } else {
+                            alert('No QR code found.');
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             }
-        }
-
-        startScanning();
+        });
     </script>
 </body>
 </html>
