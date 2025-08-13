@@ -5,49 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
     <style>
+        #video {
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid black;
+        }
         #scanButton {
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
         }
     </style>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
-    <input type="file" id="fileInput" accept="image/*" style="display: none;" capture="environment">
     <button id="scanButton">Scan QR Code</button>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+    <div id="qr-reader" style="display: none;"></div>
     <script>
         const scanButton = document.getElementById('scanButton');
-        const fileInput = document.getElementById('fileInput');
+        const qrReader = new Html5Qrcode("qr-reader");
 
         scanButton.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const context = canvas.getContext('2d');
-                        context.drawImage(img, 0, 0);
-                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, canvas.width, canvas.height);
-                        if (code) {
-                            alert(`QR Code URL: ${code.data}`);
-                        } else {
-                            alert('No QR code found.');
-                        }
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
+            scanButton.style.display = 'none'; // Hide the button
+            qrReader.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                (decodedText, decodedResult) => {
+                    alert(`QR Code URL: ${decodedText}`);
+                    qrReader.stop().then(ignore => {
+                        scanButton.style.display = 'block'; // Show the button again
+                    }).catch(err => {
+                        console.error('Error stopping the QR code scanner:', err);
+                    });
+                },
+                (errorMessage) => {
+                    // Handle scanning errors
+                }
+            ).catch(err => {
+                console.error('Error starting the QR code scanner:', err);
+            });
         });
     </script>
 </body>
