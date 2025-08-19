@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Test PWA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#317EFB">
+
+  <!-- Manifest (inline via data URI) -->
+  <link rel="manifest" id="manifest-placeholder">
+
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    #installBtn {
+      display: none;
+      padding: 10px 20px;
+      background: #317EFB;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #iosPrompt {
+      display: none;
+      margin-top: 20px;
+      padding: 10px;
+      background: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 My Test PWA</h1>
+  <p>This page demonstrates Add to Home Screen on iOS & Android.</p>
+
+  <button id="installBtn">Install App</button>
+
+  <div id="iosPrompt">
+    <p>📱 To install this app on your iPhone/iPad:</p>
+    <ol>
+      <li>Tap the <strong>Share</strong> button in Safari</li>
+      <li>Select <strong>Add to Home Screen</strong></li>
+    </ol>
+  </div>
+
+  <script>
+    // --- Base64 icons (tiny colored squares as placeholders) ---
+    const icon192 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAAVklEQVR4nO3BAQ0AAAjDMO5fNMC4hAJySjXr1q1bt27duvXr169fv379+vXr169fv379+vXr169fv379+vXr169fv379+vXr169fv379+vXr169fv379+vXr14+tBGjLAay0swAAAABJRU5ErkJggg==";
+    const icon512 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAAVklEQVR4nO3BAQ0AAAjDMO5fNMC4hAJySjXr1q1bt27duvXr169fv379+vXr169fv379+vXr169fv379+vXr169fv379+vXr169fv379+vXr169fv379+vXr14+tBGjLAay0swAAAABJRU5ErkJggg==";
+
+    // --- Build manifest dynamically ---
+    const manifest = {
+      name: "My Test PWA",
+      short_name: "TestPWA",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#317EFB",
+      icons: [
+        { src: icon192, sizes: "192x192", type: "image/png" },
+        { src: icon512, sizes: "512x512", type: "image/png" }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    document.getElementById("manifest-placeholder").setAttribute("href", manifestURL);
+
+    // --- Service worker (inline) ---
+    const swCode = `
+      self.addEventListener("install", (e) => {
+        console.log("Service Worker installed");
+      });
+      self.addEventListener("fetch", (e) => {
+        // pass-through fetch
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: "application/javascript" });
+    const swURL = URL.createObjectURL(swBlob);
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register(swURL)
+        .then(() => console.log("Service Worker registered"))
+        .catch(err => console.log("SW registration failed:", err));
+    }
+
+    // --- Android install prompt ---
+    let deferredPrompt;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installBtn = document.getElementById("installBtn");
+      installBtn.style.display = "inline-block";
+      installBtn.addEventListener("click", () => {
+        installBtn.style.display = "none";
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choice) => {
+          console.log("User choice:", choice.outcome);
+          deferredPrompt = null;
+        });
+      });
+    });
+
+    // --- iOS custom instructions ---
+    function isIos() {
+      return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    }
+    function isInStandaloneMode() {
+      return ("standalone" in window.navigator) && window.navigator.standalone;
+    }
+    if (isIos() && !isInStandaloneMode()) {
+      document.getElementById("iosPrompt").style.display = "block";
+    }
+  </script>
+</body>
+</html>
