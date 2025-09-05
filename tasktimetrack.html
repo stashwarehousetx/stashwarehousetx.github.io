@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Task Timer POC</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  h2 { margin-top: 40px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  button { padding: 5px 10px; margin-right: 5px; }
+  input[type="number"] { width: 60px; }
+  #resetBtn { background:red; color:white; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Order Task Time Logger (POC)</h1>
+
+<!-- Order Mockup -->
+<div>
+  <label>Order ID: <input type="text" id="orderId" value="1001"></label>
+  <label>Product: <input type="text" id="product" value="Bag"></label>
+  <label>Color: <input type="text" id="color" value="Black"></label>
+  <label>User: <input type="text" id="user" value="Alice"></label>
+</div>
+
+<!-- Task selection -->
+<div style="margin-top: 20px;">
+  <label>Task: 
+    <select id="taskSelect"></select>
+  </label>
+  <button id="manageTasksBtn">Manage Tasks</button>
+</div>
+
+<!-- Timer controls -->
+<div style="margin-top: 20px;">
+  <button id="startStopBtn">Start Timer</button>
+  <label>Time (minutes): <input type="number" id="timeInput" value="0" step="0.01"></label>
+  <button id="saveBtn">Save Entry</button>
+</div>
+
+<!-- Reset Button -->
+<button id="resetBtn">Reset All</button>
+
+<!-- Log Table -->
+<h2>Task Log</h2>
+<table id="logTable">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Product</th>
+      <th>Color</th>
+      <th>User</th>
+      <th>Task</th>
+      <th>Time (min)</th>
+      <th>Timestamp</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- Simple Task Admin Modal -->
+<div id="taskModal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #ccc; padding:20px;">
+  <h2>Manage Tasks</h2>
+  <ul id="taskList"></ul>
+  <input type="text" id="newTaskInput" placeholder="New task">
+  <button id="addTaskBtn">Add Task</button>
+  <button id="closeTaskModal">Close</button>
+</div>
+
+<script>
+  let defaultTasks = [
+    'Cut', 'Prep', 'Tokonole', 'Laminate', 'Build Zipper', 'Glue Tape',
+    'Glue', 'Sew', 'Strap', 'Edge Paint', 'Lining', 'Install Hardware / Rivet',
+    'Finish', 'Brand', 'Ham', 'Setup', 'Cleanup', 'Receiving',
+    'Inventory', 'Process Testing'
+  ];
+
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || defaultTasks.slice();
+  let log = JSON.parse(localStorage.getItem('log')) || [];
+  let timer = null;
+  let startTime = null;
+
+  const taskSelect = document.getElementById('taskSelect');
+  const logTableBody = document.querySelector('#logTable tbody');
+
+  function updateTaskDropdown() {
+    taskSelect.innerHTML = '';
+    tasks.forEach(task => {
+      const option = document.createElement('option');
+      option.value = task;
+      option.textContent = task;
+      taskSelect.appendChild(option);
+    });
+  }
+
+  function renderLog() {
+    logTableBody.innerHTML = '';
+    log.forEach(entry => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${entry.orderId}</td>
+        <td>${entry.product}</td>
+        <td>${entry.color}</td>
+        <td>${entry.user}</td>
+        <td>${entry.task}</td>
+        <td>${entry.time}</td>
+        <td>${entry.timestamp}</td>
+      `;
+      logTableBody.appendChild(tr);
+    });
+  }
+
+  function saveLog() {
+    const entry = {
+      orderId: document.getElementById('orderId').value,
+      product: document.getElementById('product').value,
+      color: document.getElementById('color').value,
+      user: document.getElementById('user').value,
+      task: taskSelect.value,
+      time: parseFloat(document.getElementById('timeInput').value),
+      timestamp: new Date().toLocaleString()
+    };
+    log.push(entry);
+    localStorage.setItem('log', JSON.stringify(log));
+    renderLog();
+    document.getElementById('timeInput').value = 0;
+  }
+
+  // Timer with decimal minutes display
+  document.getElementById('startStopBtn').addEventListener('click', () => {
+    if (!timer) {
+      startTime = Date.now();
+      timer = setInterval(() => {
+        const elapsedMs = Date.now() - startTime;
+        const elapsedMin = (elapsedMs / 60000).toFixed(2);
+        document.getElementById('timeInput').value = elapsedMin;
+      }, 1000);
+      document.getElementById('startStopBtn').textContent = 'Stop Timer';
+    } else {
+      clearInterval(timer);
+      timer = null;
+      const elapsedMs = Date.now() - startTime;
+      document.getElementById('timeInput').value = (elapsedMs / 60000).toFixed(2);
+      document.getElementById('startStopBtn').textContent = 'Start Timer';
+    }
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', saveLog);
+
+  // Task Admin Modal
+  const taskModal = document.getElementById('taskModal');
+  document.getElementById('manageTasksBtn').addEventListener('click', () => {
+    taskModal.style.display = 'block';
+    renderTaskList();
+  });
+  document.getElementById('closeTaskModal').addEventListener('click', () => taskModal.style.display = 'none');
+
+  function renderTaskList() {
+    const ul = document.getElementById('taskList');
+    ul.innerHTML = '';
+    tasks.forEach((task, idx) => {
+      const li = document.createElement('li');
+      li.textContent = task + ' ';
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', () => {
+        tasks.splice(idx,1);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        updateTaskDropdown();
+        renderTaskList();
+      });
