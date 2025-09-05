@@ -1,76 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Order Task Timer POC</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  h2 { margin-top: 40px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  button { padding: 5px 10px; margin-right: 5px; }
-  input[type="number"] { width: 60px; }
-  #resetBtn { background:red; color:white; margin-top: 20px; }
-</style>
-</head>
-<body>
-
-<h1>Order Task Time Logger (POC)</h1>
-
-<!-- Order Mockup -->
-<div>
-  <label>Order ID: <input type="text" id="orderId" value="1001"></label>
-  <label>Product: <input type="text" id="product" value="Bag"></label>
-  <label>Color: <input type="text" id="color" value="Black"></label>
-  <label>User: <input type="text" id="user" value="Alice"></label>
-</div>
-
-<!-- Task selection -->
-<div style="margin-top: 20px;">
-  <label>Task: 
-    <select id="taskSelect"></select>
-  </label>
-  <button id="manageTasksBtn">Manage Tasks</button>
-</div>
-
-<!-- Timer controls -->
-<div style="margin-top: 20px;">
-  <button id="startStopBtn">Start Timer</button>
-  <label>Time (minutes): <input type="number" id="timeInput" value="0" step="0.01"></label>
-  <button id="saveBtn">Save Entry</button>
-</div>
-
-<!-- Reset Button -->
-<button id="resetBtn">Reset All</button>
-
-<!-- Log Table -->
-<h2>Task Log</h2>
-<table id="logTable">
-  <thead>
-    <tr>
-      <th>Order ID</th>
-      <th>Product</th>
-      <th>Color</th>
-      <th>User</th>
-      <th>Task</th>
-      <th>Time (min)</th>
-      <th>Timestamp</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
-<!-- Simple Task Admin Modal -->
-<div id="taskModal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #ccc; padding:20px;">
-  <h2>Manage Tasks</h2>
-  <ul id="taskList"></ul>
-  <input type="text" id="newTaskInput" placeholder="New task">
-  <button id="addTaskBtn">Add Task</button>
-  <button id="closeTaskModal">Close</button>
-</div>
-
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  // === Begin existing JS ===
+
   let defaultTasks = [
     'Cut', 'Prep', 'Tokonole', 'Laminate', 'Build Zipper', 'Glue Tape',
     'Glue', 'Sew', 'Strap', 'Edge Paint', 'Lining', 'Install Hardware / Rivet',
@@ -129,7 +60,7 @@
     document.getElementById('timeInput').value = 0;
   }
 
-  // Timer with decimal minutes display
+  // Timer
   document.getElementById('startStopBtn').addEventListener('click', () => {
     if (!timer) {
       startTime = Date.now();
@@ -172,3 +103,37 @@
         updateTaskDropdown();
         renderTaskList();
       });
+      li.appendChild(delBtn);
+      ul.appendChild(li);
+    });
+  }
+
+  document.getElementById('addTaskBtn').addEventListener('click', () => {
+    const newTask = document.getElementById('newTaskInput').value.trim();
+    if (newTask) {
+      tasks.push(newTask);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      updateTaskDropdown();
+      renderTaskList();
+      document.getElementById('newTaskInput').value = '';
+    }
+  });
+
+  // Reset Button
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if(confirm('Are you sure you want to reset all logs and tasks?')) {
+      localStorage.clear();
+      tasks = defaultTasks.slice();
+      log = [];
+      updateTaskDropdown();
+      renderLog();
+    }
+  });
+
+  // Initialize
+  updateTaskDropdown();
+  renderLog();
+
+  // === End JS ===
+});
+</script>
